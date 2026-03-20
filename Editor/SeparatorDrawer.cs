@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace HierarchyEnhancer.Editor
 {
-    public class SeparatorDrawer
+    public class SeparatorDrawer : IHierarchyDrawer
     {
         private static GUIStyle _separatorStyle;
         
@@ -27,9 +27,11 @@ namespace HierarchyEnhancer.Editor
             }
         }
         
-        public static void Draw(int instanceId, Rect rect)
+        public int Order => 0;
+
+        public void Draw(int instanceId, Rect rect)
         {
-            GameObject gameObject = EditorUtility.InstanceIDToObject(instanceId) as GameObject;
+            GameObject gameObject = EditorUtility.EntityIdToObject(instanceId) as GameObject;
             if (gameObject != null)
             {
                 if (gameObject.name.StartsWith("---"))
