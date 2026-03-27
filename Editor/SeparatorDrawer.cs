@@ -19,7 +19,7 @@ namespace HierarchyEnhancer.Editor
                         fontStyle = FontStyle.Bold,
                         normal =
                         {
-                            textColor = Color.white
+                            textColor = HierarchySettings.Instance.separatorTextColor
                         }
                     };
                 }
@@ -34,17 +34,36 @@ namespace HierarchyEnhancer.Editor
             GameObject gameObject = EditorUtility.EntityIdToObject(instanceId) as GameObject;
             if (gameObject != null)
             {
-                if (gameObject.name.StartsWith("---"))
+                if (IsSeparator(gameObject, HierarchySettings.Instance.separatorText))
                 {
                     if (!gameObject.CompareTag("EditorOnly"))
                     {
                         gameObject.tag = "EditorOnly";
                     }
-                    string newName = gameObject.name.Replace("---", "").Trim();
-                    EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 1));
+                    string newName = gameObject.name.Replace(HierarchySettings.Instance.separatorText, "").Trim();
+                    SeparatorStyle.normal.textColor =  HierarchySettings.Instance.separatorTextColor;
+                    EditorGUI.DrawRect(rect, HierarchySettings.Instance.separatorBackgroundColor);
                     EditorGUI.LabelField(rect, newName, SeparatorStyle);
                 }
             }
+        }
+
+        private bool IsSeparator(GameObject gameObject, string separatorText)
+        {
+            string objectName =  gameObject.name;
+            if (objectName.StartsWith(separatorText))
+            {
+                if (objectName.Length == separatorText.Length)
+                {
+                    return true;
+                }
+
+                if(objectName[separatorText.Length] == ' ')
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
