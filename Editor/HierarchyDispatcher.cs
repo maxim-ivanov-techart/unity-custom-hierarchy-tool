@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,7 +14,22 @@ namespace HierarchyEnhancer.Editor
         static HierarchyDispatcher()
         {
             _hierarchyDrawers = new List<IHierarchyDrawer>();
-            _hierarchyDrawers.Add(new SeparatorDrawer());
+            Type[] allTypes = Assembly.GetExecutingAssembly().GetTypes();
+
+            foreach (Type type in allTypes)
+            {
+                if (type.IsInterface || type.IsAbstract)
+                {
+                    continue;
+                }
+
+                if (typeof(IHierarchyDrawer).IsAssignableFrom(type))
+                {
+                    IHierarchyDrawer hierarchyDrawer = (IHierarchyDrawer)Activator.CreateInstance(type);
+                    _hierarchyDrawers.Add(hierarchyDrawer);
+                }
+            }
+            
             _hierarchyDrawers.Sort((a, b) => a.Order.CompareTo(b.Order));
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyGUI;
         }
