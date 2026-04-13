@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -6,7 +7,8 @@ namespace HierarchyEnhancer.Editor
     public class MissingComponentDrawer : IHierarchyDrawer
     {
         private static GUIStyle _warningStyle;
-
+        private static readonly Dictionary<int, bool> _cache = new Dictionary<int, bool>();
+        
         private static GUIStyle WarningStyle
         {
             get
@@ -28,6 +30,16 @@ namespace HierarchyEnhancer.Editor
             }
         }
         public int Order => 1;
+        
+        public MissingComponentDrawer()
+        {
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
+        }
+
+        private void OnHierarchyChanged()
+        {
+            _cache.Clear();
+        }
 
         public void Draw(int instanceId, Rect rect)
         {
@@ -37,8 +49,23 @@ namespace HierarchyEnhancer.Editor
                 return;
             }
 
-            int count = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(gameObject);
-            if (count > 0)
+            bool hasMissing = false;
+
+            if (!_cache.TryGetValue(instanceId, out hasMissing))
+            {
+                if (GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(gameObject) > 0)
+                {
+                    hasMissing = true;
+                }
+                
+                if (!hasMissing)
+                {
+                    hasMissing = HasMissingReference(gameObject);
+                }
+                _cache[instanceId] = hasMissing;
+            }
+            
+            if (hasMissing)
             {
                 float markerWidth = 20f;
                 Rect markerRect = new Rect(
@@ -49,6 +76,33 @@ namespace HierarchyEnhancer.Editor
                     );
                 EditorGUI.LabelField(markerRect, "⚠", WarningStyle);
             }
+        }
+
+        private bool HasMissingReference(GameObject gameObject)
+        {
+            Component[] components = gameObject.GetComponents<Component>();
+            foreach (Component component in components)
+            {
+                if (component == null)
+                {
+                    continue;
+                }
+                
+                SerializedObject serializedObject = new SerializedObject(component);
+                SerializedProperty iterator =  serializedObject.GetIterator();
+
+                while (iterator.NextVisible(true))
+                {
+                    if (iterator.propertyType == SerializedPropertyType.ObjectReference)
+                    {
+                        if (iterator.objectReferenceValue == null && iterator.objectReferenceInstanceIDValue != 0)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 }
